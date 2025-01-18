@@ -42,8 +42,11 @@ namespace Enemies
             {
                 currentRow += rowDir[minIndex];
                 currentCol += colDir[minIndex];
-                SetPosition(currentRow, currentCol);
+                StartCoroutine(SetPosition(currentRow, currentCol));
             }
+            
+            AttackKingIfPossible();
+
         }
     }
 }

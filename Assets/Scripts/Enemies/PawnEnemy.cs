@@ -13,17 +13,10 @@ namespace Enemies
             if (BoardManager.IsValidPosition(newRow, currentCol))
             {
                 currentRow = newRow;
-                SetPosition(newRow, currentCol);
+                StartCoroutine(SetPosition(currentRow, currentCol));
             }
 
-            // Check if it's adjacent to the King and attack if so (MVP approach)
-            if (Mathf.Abs(King.currentRow - currentRow) <= 1 &&
-                Mathf.Abs(King.currentCol - currentCol) <= 1)
-            {
-                // Attack King
-                King.TakeDamage(atk);
-                Debug.Log("Pawn attacked the King!");
-            }
+            AttackKingIfPossible();
         }
     }
 }

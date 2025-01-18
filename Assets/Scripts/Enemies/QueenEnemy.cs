@@ -31,8 +31,11 @@ namespace Enemies
             {
                 currentRow = newRow;
                 currentCol = newCol;
-                SetPosition(currentRow, currentCol);
+                StartCoroutine(SetPosition(currentRow, currentCol));
             }
+            
+            AttackKingIfPossible();
+
         }
     }
 }

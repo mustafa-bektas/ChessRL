@@ -1,3 +1,5 @@
+using System.Collections;
+using Enemies;
 using Managers;
 using UnityEngine;
 
@@ -7,6 +9,8 @@ public class KingController : MonoBehaviour
     public int currentCol = 0;
     public int maxHP = 5;
     public int currentHP;
+    public int atk = 2;
+    public int def = 1;
 
     private BoardManager boardManager;
 
@@ -14,29 +18,10 @@ public class KingController : MonoBehaviour
     {
         currentHP = maxHP;
         boardManager = FindAnyObjectByType<BoardManager>();
-
-        // Position King at bottom-left (row=0, col=0) for simplicity
-        // Adjust transform so it visually matches the board cell
-        SetPosition(currentRow, currentCol);
+        StartCoroutine(SetPosition(currentRow, currentCol));
     }
 
-    void Update()
-    {
-        // We only move if it's the player's turn – 
-        // but for the MVP, we can read input here or use a TurnManager approach
-        if (Input.GetKeyDown(KeyCode.UpArrow))    TryMove(1, 0);
-        if (Input.GetKeyDown(KeyCode.DownArrow))  TryMove(-1, 0);
-        if (Input.GetKeyDown(KeyCode.LeftArrow))  TryMove(0, -1);
-        if (Input.GetKeyDown(KeyCode.RightArrow)) TryMove(0, 1);
-
-        // Diagonals if you want them:
-        if (Input.GetKeyDown(KeyCode.W)) TryMove(1, 1);   // up-right diagonal
-        if (Input.GetKeyDown(KeyCode.A)) TryMove(-1, -1); // down-left diagonal
-        // etc. for other diagonals...
-        if (Input.GetKeyDown(KeyCode.S)) TryMove(-1, 1);  // down-right diagonal
-        if (Input.GetKeyDown(KeyCode.D)) TryMove(1, -1);  // up-left diagonal
-        
-    }
+    // Removed the Update() input checks entirely!
 
     public void TryMove(int rowDelta, int colDelta)
     {
@@ -44,30 +29,51 @@ public class KingController : MonoBehaviour
         int newCol = currentCol + colDelta;
 
         // Check if new position is valid
-        if (boardManager.IsValidPosition(newRow, newCol) && !boardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol))
+        if (boardManager.IsValidPosition(newRow, newCol) &&
+            !boardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol))
         {
             currentRow = newRow;
             currentCol = newCol;
-            SetPosition(newRow, newCol);
+            StartCoroutine(SetPosition(newRow, newCol));
         }
     }
 
-    private void SetPosition(int r, int c)
+    protected virtual IEnumerator SetPosition(int r, int c)
     {
-        // Place King exactly at the cell's position
         GameObject cell = boardManager.gameObject.transform.Find($"Cell_{r}_{c}").gameObject;
-        transform.position = cell.transform.position;
+        Vector3 targetPosition = cell.transform.position;
+        float duration = 0.5f; // Duration of the movement in seconds
+        float elapsedTime = 0f;
+
+        while (elapsedTime < duration)
+        {
+            transform.position = Vector3.Lerp(transform.position, targetPosition, elapsedTime / duration);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.position = targetPosition; // Ensure the final position is set
     }
 
-    // For taking damage
     public void TakeDamage(int damage)
     {
-        currentHP -= damage;
+        int damageTaken = Mathf.Max(1, damage - this.def);
+        currentHP -= damageTaken;
+        Debug.Log($"King took {damageTaken} damage! Current HP: {currentHP}");
+        
         if (currentHP <= 0)
         {
-            // For MVP, just log Game Over
             Debug.Log("King is dead! Game Over.");
-            // You might disable the King or show a UI panel
+            // Disable King or trigger a UI
+            gameObject.SetActive(false);
         }
+    }
+
+    public void Attack(ChessEnemy enemy)
+    {
+        if (enemy == null) return;
+
+        int damage = Mathf.Max(1, this.atk);
+        enemy.TakeDamage(damage);
     }
 }
