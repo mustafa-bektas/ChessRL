@@ -1,3 +1,4 @@
+using Managers;
 using UnityEngine;
 
 public class KingController : MonoBehaviour
@@ -43,7 +44,7 @@ public class KingController : MonoBehaviour
         int newCol = currentCol + colDelta;
 
         // Check if new position is valid
-        if (boardManager.IsValidPosition(newRow, newCol))
+        if (boardManager.IsValidPosition(newRow, newCol) && !boardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol))
         {
             currentRow = newRow;
             currentCol = newCol;
