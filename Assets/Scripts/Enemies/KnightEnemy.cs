@@ -5,48 +5,47 @@ namespace Enemies
         protected override void Start()
         {
             base.Start();
-            hp = 2; atk = 3; def = 0; // example stats
+            hp = 4; atk = 3; def = 0;
         }
 
         public override void EnemyMove()
         {
-            // jumps in an L shape just like chess
-            // tries to close the distance to the King
-            
-            // 8 possible moves
+            // If King’s ATK is significantly higher (example: 5 higher), do a timid approach
+            // For demonstration: If (King.atk - this.atk >= 5), do we skip or pick a move that doesn't reduce distance?
+            // We'll keep it simple for now:
+
             int[] rowDir = { 2, 1, -1, -2, -2, -1, 1, 2 };
             int[] colDir = { 1, 2, 2, 1, -1, -2, -2, -1 };
-            
-            // find the move that gets the Knight closest to the King
-            
+
             int minDist = int.MaxValue;
-            int minIndex = -1;
-            
+            int bestIndex = -1;
+
             for (int i = 0; i < 8; i++)
             {
                 int newRow = currentRow + rowDir[i];
                 int newCol = currentCol + colDir[i];
-                
-                if (BoardManager.IsValidPosition(newRow, newCol) && !BoardManager.IsPositionOccupiedByKing(newRow, newCol))
+
+                if (BoardManager.IsValidPosition(newRow, newCol) &&
+                    !BoardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol))
                 {
                     int dist = BoardManager.GetManhattanDistance(newRow, newCol, King.currentRow, King.currentCol);
                     if (dist < minDist)
                     {
                         minDist = dist;
-                        minIndex = i;
+                        bestIndex = i;
                     }
                 }
             }
-            
-            if (minIndex != -1)
+
+            if (bestIndex != -1)
             {
-                currentRow += rowDir[minIndex];
-                currentCol += colDir[minIndex];
+                currentRow += rowDir[bestIndex];
+                currentCol += colDir[bestIndex];
                 StartCoroutine(SetPosition(currentRow, currentCol));
             }
-            
-            AttackKingIfPossible();
 
+            // Attack if adjacent
+            AttackKingIfAdjacent(atk);
         }
     }
 }

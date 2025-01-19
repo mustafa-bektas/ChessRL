@@ -3,7 +3,7 @@ using Enemies;
 using Managers;
 using UnityEngine;
 
-public class KingController : MonoBehaviour
+public sealed class KingController : MonoBehaviour
 {
     public int currentRow = 0;
     public int currentCol = 0;
@@ -38,7 +38,7 @@ public class KingController : MonoBehaviour
         }
     }
 
-    protected virtual IEnumerator SetPosition(int r, int c)
+    private IEnumerator SetPosition(int r, int c)
     {
         GameObject cell = boardManager.gameObject.transform.Find($"Cell_{r}_{c}").gameObject;
         Vector3 targetPosition = cell.transform.position;

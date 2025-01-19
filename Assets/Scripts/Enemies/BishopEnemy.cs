@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Enemies
 {
     public class BishopEnemy : ChessEnemy
@@ -5,33 +7,59 @@ namespace Enemies
         protected override void Start()
         {
             base.Start();
-            hp = 3; atk = 2; def = 0; // example stats
+            hp = 4; atk = 2; def = 0;
         }
 
         public override void EnemyMove()
         {
-            // moves diagonally closer to King’s row/col
-            int rowDir = -1;
-            int colDir = -1;
-            
-            if (King.currentRow > currentRow) rowDir = 1;
-            else if (King.currentRow < currentRow) rowDir = -1;
-            
-            if (King.currentCol > currentCol) colDir = 1;
-            else if (King.currentCol < currentCol) colDir = -1;
-            
-            // Attempt move 1 square in that direction
-            int newRow = currentRow + rowDir;
-            int newCol = currentCol + colDir;
-            
-            if (BoardManager.IsValidPosition(newRow, newCol) && !BoardManager.IsPositionOccupiedByKing(newRow, newCol))
+            // 1) Check the "magic sniper" special attack 
+            // if the King is exactly 2 diagonal squares away
+            // i.e., rowDelta == 2 and colDelta == 2
+            int rowDelta = Mathf.Abs(King.currentRow - currentRow);
+            int colDelta = Mathf.Abs(King.currentCol - currentCol);
+
+            if (rowDelta == 2 && colDelta == 2)
             {
-                currentRow = newRow;
-                currentCol = newCol;
-                StartCoroutine(SetPosition(currentRow, currentCol));
+                // Check line of sight
+                if (HasLineOfSight(currentRow, currentCol, King.currentRow, King.currentCol))
+                {
+                    // "Spell attack" at range
+                    Debug.Log("Bishop casts a diagonal spell on the King!");
+                    King.TakeDamage(atk); 
+                    return; // Bishop used its action to cast spell, no movement
+                }
             }
-            
-            AttackKingIfPossible();
+
+            // 2) If no special attack, move diagonally closer up to 2 squares
+            // We'll pick the direction and attempt up to 2 steps
+            int rowDir = (King.currentRow > currentRow) ? 1 : -1;
+            int colDir = (King.currentCol > currentCol) ? 1 : -1;
+
+            // Attempt 2 steps
+            for (int i = 0; i < 2; i++)
+            {
+                int newRow = currentRow + rowDir;
+                int newCol = currentCol + colDir;
+
+                if (BoardManager.IsValidPosition(newRow, newCol) &&
+                    !BoardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol) &&
+                    !BoardManager.IsPositionOccupiedByKing(newRow, newCol))
+                {
+                    currentRow = newRow;
+                    currentCol = newCol;
+                }
+                else
+                {
+                    // blocked => stop
+                    break;
+                }
+            }
+
+            // Animate final position
+            StartCoroutine(SetPosition(currentRow, currentCol));
+
+            // Could do a final adjacency check for melee
+            AttackKingIfAdjacent(atk);
         }
     }
 }
