@@ -100,8 +100,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a2b974a86503c54e99de55696fdc145, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentRow: 0
-  currentCol: 0
+  currentRow: 7
+  currentCol: 4
   hp: 0
   atk: 0
   def: 0

@@ -7,36 +7,68 @@ namespace Enemies
         protected override void Start()
         {
             base.Start();
-            hp = 5; atk = 3; def = 1;
+            hp = 5; 
+            atk = 3; 
+            def = 1;
         }
 
         public override void EnemyMove()
         {
-            // 1) Determine which direction to move (horizontal or vertical) 
-            //    We choose the direction of greatest distance from the King
-            int rowDiff = King.currentRow - currentRow; 
+            // Determine how far away the Rook is vertically vs horizontally
+            int rowDiff = King.currentRow - currentRow;
             int colDiff = King.currentCol - currentCol;
 
-            int moveRowDir = 0;
-            int moveColDir = 0;
+            // Decide which axis is "dominant" based on absolute difference
+            bool moveVertically = (Mathf.Abs(rowDiff) >= Mathf.Abs(colDiff));
 
-            if (Mathf.Abs(rowDiff) >= Mathf.Abs(colDiff))
+            // We'll try up to 3 squares in that direction.
+            // If we can't move at least 1 square, we'll try the other axis.
+
+            bool moved = false;
+            if (moveVertically)
             {
-                // Move vertically toward the King
-                moveRowDir = (rowDiff > 0) ? 1 : -1;
+                moved = TryRookMovement(rowDiff, 0);
+                // If we couldn't move in that axis, try horizontal
+                if (!moved)
+                {
+                    moved = TryRookMovement(0, colDiff);
+                }
             }
             else
             {
-                // Move horizontally toward the King
-                moveColDir = (colDiff > 0) ? 1 : -1;
+                // First try horizontal
+                moved = TryRookMovement(0, colDiff);
+                // If blocked, try vertical
+                if (!moved)
+                {
+                    moved = TryRookMovement(rowDiff, 0);
+                }
             }
 
-            // 2) Attempt to move up to 3 squares in that direction
+            // Animate final position (whether we moved or not)
+            StartCoroutine(SetPosition(currentRow, currentCol));
+
+            // If we ended up adjacent to the King, do a melee attack
+            AttackKingIfAdjacent(atk);
+        }
+
+        /// <summary>
+        /// Attempts to move the Rook up to 3 squares in the sign of rowDelta or colDelta.
+        /// If we successfully move at least 1 square, returns true; otherwise false.
+        /// </summary>
+        private bool TryRookMovement(int rowDelta, int colDelta)
+        {
+            // Determine the sign of movement in each axis (row or col).
+            int rowDir = (rowDelta > 0) ? 1 : (rowDelta < 0) ? -1 : 0;
+            int colDir = (colDelta > 0) ? 1 : (colDelta < 0) ? -1 : 0;
+
             int stepsToMove = 3;
+            bool movedAtLeastOneSquare = false;
+
             while (stepsToMove > 0)
             {
-                int newRow = currentRow + moveRowDir;
-                int newCol = currentCol + moveColDir;
+                int newRow = currentRow + rowDir;
+                int newCol = currentCol + colDir;
 
                 // If next cell is valid & not occupied, move into it
                 if (BoardManager.IsValidPosition(newRow, newCol) &&
@@ -45,21 +77,17 @@ namespace Enemies
                 {
                     currentRow = newRow;
                     currentCol = newCol;
-                    // We move 1 cell, but keep going until stepsToMove is 0 or blocked
+                    movedAtLeastOneSquare = true;
                 }
                 else
                 {
-                    // We hit a wall or the King or an enemy => stop moving
+                    // Blocked, stop trying
                     break;
                 }
                 stepsToMove--;
             }
 
-            // 3) Animate final position
-            StartCoroutine(SetPosition(currentRow, currentCol));
-
-            // 4) If we ended up adjacent to the King, do a melee attack
-            AttackKingIfAdjacent(this.atk);
+            return movedAtLeastOneSquare;
         }
     }
 }
