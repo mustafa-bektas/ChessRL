@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Enemies;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Managers
 {
@@ -16,14 +17,32 @@ namespace Managers
         private enum PlayerSubPhase { Move, Action }
         [SerializeField] private PlayerSubPhase _playerSubPhase = PlayerSubPhase.Move;
 
-        private bool _hasMovedThisTurn = false;  // Track if the King actually moved
+        [Header("UI References")]
+        [SerializeField] private Button attackButton;
+        [SerializeField] private Button powerAttackButton;
+        [SerializeField] private Button skipButton;
+        
+        [SerializeField] private TMPro.TextMeshProUGUI phaseText;
 
+        // Tracks whether we've moved in the current turn (affects Power Attack logic)
+        private bool _hasMovedThisTurn = false;
+
+        private void Start()
+        {
+            // Hook up the button events
+            attackButton.onClick.AddListener(OnAttackClicked);
+            powerAttackButton.onClick.AddListener(OnPowerAttackClicked);
+            skipButton.onClick.AddListener(OnSkipClicked);
+
+            RefreshUI();
+        }
+        
         private void Update()
         {
             switch (_currentPhase)
             {
                 case GamePhase.PlayerTurn:
-                    HandlePlayerTurn();
+                    // We'll rely on click-based King movement and UI button clicks
                     break;
 
                 case GamePhase.EnemyTurn:
@@ -37,130 +56,51 @@ namespace Managers
             CheckWinCondition();
         }
 
-        #region Player Turn
+        #region Player Turn Actions (Button Clicks)
 
-        private void HandlePlayerTurn()
+        /// <summary>
+        /// Player clicked the "Attack" button.
+        /// </summary>
+        private void OnAttackClicked()
         {
-            switch (_playerSubPhase)
-            {
-                case PlayerSubPhase.Move:
-                    HandleMoveSubPhase();
-                    break;
-                case PlayerSubPhase.Action:
-                    HandleActionSubPhase();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private void HandleMoveSubPhase()
-        {
-            // -- Movement Inputs --
-            if (Input.GetKeyDown(KeyCode.UpArrow))    PlayerTryMove(1, 0);
-            if (Input.GetKeyDown(KeyCode.DownArrow))  PlayerTryMove(-1, 0);
-            if (Input.GetKeyDown(KeyCode.LeftArrow))  PlayerTryMove(0, -1);
-            if (Input.GetKeyDown(KeyCode.RightArrow)) PlayerTryMove(0, 1);
-
-            if (Input.GetKeyDown(KeyCode.W)) PlayerTryMove(1, 1);
-            if (Input.GetKeyDown(KeyCode.S)) PlayerTryMove(-1, 1);
-            if (Input.GetKeyDown(KeyCode.A)) PlayerTryMove(-1, -1);
-            if (Input.GetKeyDown(KeyCode.D)) PlayerTryMove(1, -1);
-
-            // Skip Movement:
-            if (Input.GetKeyDown(KeyCode.M)) // 'M' for "skip Move"
-            {
-                // We did not move at all
-                _hasMovedThisTurn = false;
-                // Proceed to action sub-phase
-                _playerSubPhase = PlayerSubPhase.Action;
-            }
-        }
-
-        private void HandleActionSubPhase()
-        {
-            // Attack example: space bar to attack an adjacent enemy
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                // Attempt to attack an adjacent enemy if any
-                ChessEnemy adjacentEnemy = FindAdjacentEnemy();
-                if (adjacentEnemy != null)
-                {
-                    king.Attack(adjacentEnemy);
-                    EndPlayerTurn();
-                    return;
-                }
-            }
-
-            // Wait/Pass turn
-            if (Input.GetKeyDown(KeyCode.X))
-            {
-                // No action taken, just end turn
-                EndPlayerTurn();
+            if (_currentPhase != GamePhase.PlayerTurn || _playerSubPhase != PlayerSubPhase.Action)
                 return;
-            }
 
-            // Power Attack (only if we did NOT move this turn)
-            // We'll say press 'P' for Power Attack
-            if (!_hasMovedThisTurn && Input.GetKeyDown(KeyCode.P))
-            {
-                PowerAttack();
-                EndPlayerTurn();
-                return;
-            }
-        }
-
-        private void EndPlayerTurn()
-        {
-            _currentPhase = GamePhase.EnemyTurn;
-            // Reset the sub-phase for the next time we come back to PlayerTurn
-            _playerSubPhase = PlayerSubPhase.Move;
-            _hasMovedThisTurn = false;
-        }
-
-        private void PlayerTryMove(int rowDelta, int colDelta)
-        {
-            int oldRow = king.currentRow;
-            int oldCol = king.currentCol;
-
-            king.TryMove(rowDelta, colDelta);
-
-            // If we actually moved
-            if (king.currentRow != oldRow || king.currentCol != oldCol)
-            {
-                _hasMovedThisTurn = true;
-                // Once the move is done, we switch to the action sub-phase
-                _playerSubPhase = PlayerSubPhase.Action;
-            }
-        }
-
-        private ChessEnemy FindAdjacentEnemy()
-        {
-            foreach (var enemy in enemies)
-            {
-                bool isAdjacent = Mathf.Abs(enemy.currentRow - king.currentRow) <= 1 
-                                  && Mathf.Abs(enemy.currentCol - king.currentCol) <= 1;
-                if (isAdjacent)
-                    return enemy;
-            }
-            return null;
-        }
-
-        // Example Power Attack logic
-        private void PowerAttack()
-        {
-            // Attack an adjacent enemy with a +2 to your ATK for this hit ONLY
             ChessEnemy adjacentEnemy = FindAdjacentEnemy();
             if (adjacentEnemy != null)
             {
-                // Temporarily boost King’s ATK
-                int originalAtk = king.atk;
-                king.atk += 2;
-
                 king.Attack(adjacentEnemy);
+                EndPlayerTurn();
+            }
+            else
+            {
+                Debug.Log("No adjacent enemy to attack!");
+            }
+        }
 
-                // Restore original ATK
+        /// <summary>
+        /// Player clicked the "Power Attack" button (only valid if we haven't moved).
+        /// </summary>
+        private void OnPowerAttackClicked()
+        {
+            if (_currentPhase != GamePhase.PlayerTurn || _playerSubPhase != PlayerSubPhase.Action)
+                return;
+
+            if (_hasMovedThisTurn)
+            {
+                Debug.Log("Cannot Power Attack after moving!");
+                return;
+            }
+
+            ChessEnemy adjacentEnemy = FindAdjacentEnemy();
+            if (adjacentEnemy != null)
+            {
+                int originalAtk = king.atk;
+                king.atk += 2; // temporary buff
+                king.Attack(adjacentEnemy);
                 king.atk = originalAtk;
+
+                EndPlayerTurn();
             }
             else
             {
@@ -168,8 +108,64 @@ namespace Managers
             }
         }
 
+        /// <summary>
+        /// Player clicked the "Skip" button. 
+        /// Could be skipping Movement in Move sub-phase OR skipping Action in Action sub-phase.
+        /// </summary>
+        private void OnSkipClicked()
+        {
+            if (_currentPhase != GamePhase.PlayerTurn)
+                return;
+
+            if (_playerSubPhase == PlayerSubPhase.Move)
+            {
+                // Skipping movement
+                _hasMovedThisTurn = false;
+                _playerSubPhase = PlayerSubPhase.Action;
+                Debug.Log("Player skipped movement.");
+                RefreshUI();
+            }
+            else if (_playerSubPhase == PlayerSubPhase.Action)
+            {
+                // Skipping action => end turn
+                Debug.Log("Player skipped action.");
+                EndPlayerTurn();
+            }
+        }
+
         #endregion
 
+        #region Turn Flow
+
+        private void EndPlayerTurn()
+        {
+            _currentPhase = GamePhase.EnemyTurn;
+            _playerSubPhase = PlayerSubPhase.Move;
+            _hasMovedThisTurn = false;
+            RefreshUI();
+        }
+
+        /// <summary>
+        /// Called by KingController after a successful click-move.
+        /// This sets the sub-phase to Action and flags we've used our move.
+        /// </summary>
+        public void PlayerMoved()
+        {
+            _hasMovedThisTurn = true;
+            _playerSubPhase = PlayerSubPhase.Action;
+            RefreshUI();
+        }
+
+        /// <summary>
+        /// Tells the King whether it's allowed to move right now (click-based).
+        /// True if it's PlayerTurn AND the sub-phase is Move.
+        /// </summary>
+        public bool CanPlayerMove()
+        {
+            return _currentPhase == GamePhase.PlayerTurn && _playerSubPhase == PlayerSubPhase.Move;
+        }
+
+        #endregion
 
         #region Enemy Turn
 
@@ -178,7 +174,7 @@ namespace Managers
             // Enemies perform their moves
             foreach (var enemy in enemies)
             {
-                if (enemy != null) // it might get destroyed mid-turn
+                if (enemy != null)
                 {
                     enemy.EnemyMove();
                 }
@@ -186,9 +182,24 @@ namespace Managers
 
             // After enemies move, go back to Player Turn
             _currentPhase = GamePhase.PlayerTurn;
+            RefreshUI();
         }
 
         #endregion
+
+        #region UI & Helpers
+
+        private ChessEnemy FindAdjacentEnemy()
+        {
+            foreach (var enemy in enemies)
+            {
+                bool isAdjacent = Mathf.Abs(enemy.currentRow - king.currentRow) <= 1
+                                  && Mathf.Abs(enemy.currentCol - king.currentCol) <= 1;
+                if (isAdjacent)
+                    return enemy;
+            }
+            return null;
+        }
 
         private void CheckWinCondition()
         {
@@ -196,7 +207,6 @@ namespace Managers
             if (enemies == null || enemies.Count == 0)
             {
                 Debug.Log("All enemies defeated! You Win!");
-                // Show victory screen or reload
             }
 
             // If King is at exit
@@ -205,5 +215,46 @@ namespace Managers
                 Debug.Log("Reached the exit! You Win!");
             }
         }
+        
+        private void RefreshUI()
+        {
+            // Default to all disabled
+            attackButton.interactable = false;
+            powerAttackButton.interactable = false;
+            skipButton.interactable = false;
+
+            // If not player turn, we do nothing more
+            if (_currentPhase != GamePhase.PlayerTurn) return;
+
+            // We are in Player Turn, so skip button is always available (for skipping move/action).
+            skipButton.interactable = true;
+
+            // Check sub-phase
+            if (_playerSubPhase == PlayerSubPhase.Move)
+            {
+                // Move sub-phase => no Attack or PowerAttack
+                phaseText.text = "MOVE";
+                return;
+            }
+            else if (_playerSubPhase == PlayerSubPhase.Action)
+            {
+                phaseText.text = "ACTION";
+                // 1) If no adjacent enemy, automatically skip action
+                bool enemyAdjacent = (FindAdjacentEnemy() != null);
+                if (!enemyAdjacent)
+                {
+                    Debug.Log("No adjacent enemy => skipping action phase automatically.");
+                    EndPlayerTurn();
+                    return; // do NOT enable any buttons
+                }
+
+                // 2) If an enemy is adjacent, we can Attack or possibly PowerAttack
+                attackButton.interactable = true;
+                // Power Attack only if we haven't moved
+                powerAttackButton.interactable = !_hasMovedThisTurn;
+            }
+        }
+
+        #endregion
     }
 }

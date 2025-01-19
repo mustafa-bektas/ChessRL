@@ -27,6 +27,7 @@ namespace Managers
         {
             _king = FindAnyObjectByType<KingController>();
             _turnManager = FindAnyObjectByType<TurnManager>();
+            GenerateWalls();
         }
 
         void GenerateBoard()
@@ -41,9 +42,20 @@ namespace Managers
                     cell.name = $"Cell_{r}_{c}";
                     _grid[r, c] = cell;
                     cell.transform.parent = this.transform; // Keep hierarchy organized
+
+                    // Assign row/col to the CellController
+                    CellController cc = cell.GetComponent<CellController>();
+                    if (cc != null)
+                    {
+                        cc.row = r;
+                        cc.col = c;
+                    }
                 }
             }
-            
+        }
+
+        void GenerateWalls()
+        {
             int wallCount = Random.Range(minWalls, maxWalls+1);
             for (int i = 0; i < wallCount; i++)
             {
@@ -51,7 +63,7 @@ namespace Managers
                 int c = Random.Range(0, cols);
                 
                 // Ensure we don’t place on the starting cell or exit cell, etc.
-                if (r == 0 && c == 0 || r == rows - 1 && c == cols - 1)
+                if (r == 0 && c == 0 || r == rows - 1 && c == cols - 1 || IsPositionOccupiedByAnyEnemy(r, c))
                 {
                     i--;
                     continue;
