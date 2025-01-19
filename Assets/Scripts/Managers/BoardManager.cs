@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Items;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -17,6 +19,8 @@ namespace Managers
         private GameObject[,] _grid;   // Store references to each cell in a 2D array
         private KingController _king;
         private TurnManager _turnManager;
+        public List<ItemScriptableObject> possibleItems;
+        public ItemPickup itemPickupPrefab;
 
         void Awake()
         {
@@ -28,6 +32,57 @@ namespace Managers
             _king = FindAnyObjectByType<KingController>();
             _turnManager = FindAnyObjectByType<TurnManager>();
             GenerateWalls();
+            SpawnRandomItem();
+        }
+
+        private void SpawnRandomItem()
+        {
+            // 1) Pick a random item type
+            ItemScriptableObject randomType = GetRandomItemType();
+
+            // 3) Find a random free cell
+            List<Vector2Int> freeCells = new List<Vector2Int>();
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
+                {
+                    if (IsValidPosition(r,c) && !IsWall(r,c) && !IsPositionOccupiedByAnyEnemy(r,c) && !IsPositionOccupiedByKing(r,c))
+                    {
+                        freeCells.Add(new Vector2Int(r,c));
+                    }
+                }
+            }
+
+            if (freeCells.Count == 0)
+            {
+                Debug.LogWarning("No free cell to spawn item!");
+                return;
+            }
+
+            Vector2Int chosen = freeCells[Random.Range(0, freeCells.Count)];
+
+            // 4) Instantiate the item pickup prefab
+            GameObject cellObj = _grid[chosen.x, chosen.y];
+            Vector3 spawnPos = cellObj.transform.position;
+            ItemPickup pickup = Instantiate(itemPickupPrefab, spawnPos, Quaternion.identity);
+
+            pickup.itemData = randomType;
+            pickup.GetComponent<SpriteRenderer>().sprite = randomType.icon;
+
+            Debug.Log($"Spawned {randomType.itemName} at ({chosen.x},{chosen.y})");
+        }
+        
+        bool IsWall(int r, int c)
+        {
+            return _grid[r, c].name.Contains("Wall");
+        }
+        
+        private ItemScriptableObject GetRandomItemType()
+        {
+            // Weighted or not, up to you
+            int index = Random.Range(0, possibleItems.Count);
+            ItemScriptableObject chosenItem = possibleItems[index];
+            return chosenItem;
         }
 
         void GenerateBoard()

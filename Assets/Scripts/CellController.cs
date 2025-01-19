@@ -53,6 +53,7 @@ public class CellController : MonoBehaviour
     /// </summary>
     private void OnMouseDown()
     {
+        Debug.Log($"Cell clicked: {row}, {col}");
         // If this cell is highlighted, it might be a valid move. 
         // We let the King know about the click. 
         if (_isHighlighted)

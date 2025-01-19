@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using Enemies;
+using Items;
 using Managers;
 using UnityEngine;
 
@@ -15,17 +17,68 @@ public sealed class KingController : MonoBehaviour
     private BoardManager _boardManager;
     private TurnManager _turnManager;
     private bool _isSelected = false; // is the king currently selected by the player?
+    private new Collider2D _collider;
+
+    public List<ItemScriptableObject> inventory = new List<ItemScriptableObject>();
+    private InventoryUI _ui;
 
     void Start()
     {
         currentHP = maxHP;
         _boardManager = FindAnyObjectByType<BoardManager>();
         _turnManager = FindAnyObjectByType<TurnManager>();
+        _ui = FindAnyObjectByType<InventoryUI>();
+        _collider = GetComponent<Collider2D>();
         StartCoroutine(SetPosition(currentRow, currentCol));
     }
 
-    // Removed the Update() input checks entirely!
+    public void PickupItem(ItemScriptableObject itemData)
+    {
+        // If it's passive, apply immediately
+        if (itemData.isPassive)
+        {
+            itemData.UseItem(this);
+            Debug.Log($"Picked up {itemData.name} - passive effect applied immediately!");
+        }
+        else
+        {
+            inventory.Add(itemData);
+            Debug.Log($"Picked up {itemData.name} - added to inventory!");
+            // Refresh Inventory UI
+            _ui.RefreshInventory(inventory);
+        }
+    }
+    
+    /// <summary>
+    /// Called when player clicks an item button in the UI, or if we apply a passive effect
+    /// </summary>
+    public void UseItem(ItemScriptableObject item)
+    {
+        // Actually apply item effect
+        item.UseItem(this);
 
+        // Remove from inventory after use
+        inventory.Remove(item);
+        _ui.RefreshInventory(inventory);
+    }
+    
+    public void GiveRandomMovement()
+    {
+        // Example logic:
+        // 1) Randomly pick from {Rook, Bishop, Knight, Queen}
+        // 2) Store it in a small variable that modifies King’s next move
+        // 3) On your next move, revert to normal King movement
+
+        // For demonstration:
+        string[] pieceOptions = { "Rook", "Bishop", "Knight", "Queen" };
+        int idx = Random.Range(0, pieceOptions.Length);
+        string randomPiece = pieceOptions[idx];
+        Debug.Log("Movement Orb grants " + randomPiece + " movement (1-time)!");
+
+        // Implementation detail depends on how your King movement logic is set up. 
+        // You might set a bool like `king.hasTempMovement = true; king.tempMovementType = randomPiece;`
+    }
+    
     public void TryMove(int rowDelta, int colDelta)
     {
         int newRow = currentRow + rowDelta;
@@ -43,6 +96,9 @@ public sealed class KingController : MonoBehaviour
 
     private IEnumerator SetPosition(int r, int c)
     {
+        // disable the King's collider while moving
+        _collider.enabled = false;
+        
         GameObject cell = _boardManager.gameObject.transform.Find($"Cell_{r}_{c}").gameObject;
         Vector3 targetPosition = cell.transform.position;
         float duration = 0.3f; // Duration of the movement in seconds
@@ -56,6 +112,7 @@ public sealed class KingController : MonoBehaviour
         }
 
         transform.position = targetPosition; // Ensure the final position is set
+        _collider.enabled = true; // re-enable the collider
     }
 
     public void TakeDamage(int damage)

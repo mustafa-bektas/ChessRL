@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 445549694788412560}
   - component: {fileID: 4295241918889490910}
   - component: {fileID: 7949228728705023255}
+  - component: {fileID: -6913281671159697428}
   m_Layer: 0
   m_Name: Bishop
   m_TagString: Untagged
@@ -105,3 +106,51 @@ MonoBehaviour:
   hp: 0
   atk: 0
   def: 0
+  glowMaterial: {fileID: 2100000, guid: bb0c6b17ffffd7e4e8682be1dbcc6806, type: 2}
+  originalMaterial: {fileID: 2100000, guid: 86340485d3c6efa4a8d29711d327e0c9, type: 2}
+--- !u!61 &-6913281671159697428
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7092549234420362285}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 1
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0

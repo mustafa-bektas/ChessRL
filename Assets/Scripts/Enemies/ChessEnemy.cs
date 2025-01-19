@@ -11,6 +11,8 @@ namespace Enemies
         public int hp;
         public int atk;
         public int def;
+        
+        private Color _originalColor;
 
         protected BoardManager BoardManager;
         protected KingController King;
@@ -21,7 +23,24 @@ namespace Enemies
             BoardManager = FindAnyObjectByType<BoardManager>();
             King = FindAnyObjectByType<KingController>();
             TurnManager = FindAnyObjectByType<TurnManager>();
+            _originalColor = GetComponent<SpriteRenderer>().color;
             StartCoroutine(SetPosition(currentRow, currentCol));
+        }
+        
+        public void Highlight(bool enable)
+        {
+            Debug.Log("Highlighting enemy");
+            // add a red tint to the original color
+            Color highlightColor = Color.red;
+            Color newColor = enable ? _originalColor + highlightColor : _originalColor;
+            
+            GetComponent<SpriteRenderer>().color = newColor;
+        }
+        
+        private void OnMouseDown()
+        {
+            // If TurnManager is in "Select Target" mode, we pass this up
+            TurnManager.OnEnemyClicked(this);
         }
 
         public virtual void TakeDamage(int damage)
