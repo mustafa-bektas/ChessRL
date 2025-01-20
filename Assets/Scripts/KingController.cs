@@ -111,7 +111,12 @@ public sealed class KingController : MonoBehaviour
         _collider.enabled = false;
         
         GameObject cell = _boardManager.gameObject.transform.Find($"Cell_{r}_{c}").gameObject;
+        
+        Debug.Log($"Moving King to {cell.name}");
+        
         Vector3 targetPosition = cell.transform.position;
+        Debug.Log("2");
+        Debug.Log(targetPosition);
         float duration = 0.3f; // Duration of the movement in seconds
         float elapsedTime = 0f;
 
