@@ -17,10 +17,23 @@ public sealed class KingController : MonoBehaviour
     private BoardManager _boardManager;
     private TurnManager _turnManager;
     private bool _isSelected = false; // is the king currently selected by the player?
-    private new Collider2D _collider;
+    private Collider2D _collider;
 
     public List<ItemScriptableObject> inventory = new List<ItemScriptableObject>();
     private InventoryUI _ui;
+    
+    private MovementMode _movementMode = MovementMode.Normal;
+    // How many moves left in special mode (1 for a single use)
+    private int _tempMovementUses = 0;
+    
+    public enum MovementMode
+    {
+        Normal,
+        Rook,
+        Knight,
+        Bishop,
+        Queen
+    }
 
     void Start()
     {
@@ -29,6 +42,10 @@ public sealed class KingController : MonoBehaviour
         _turnManager = FindAnyObjectByType<TurnManager>();
         _ui = FindAnyObjectByType<InventoryUI>();
         _collider = GetComponent<Collider2D>();
+        
+        _movementMode = MovementMode.Normal;
+        _tempMovementUses = 0;
+        
         StartCoroutine(SetPosition(currentRow, currentCol));
     }
 
@@ -64,19 +81,13 @@ public sealed class KingController : MonoBehaviour
     
     public void GiveRandomMovement()
     {
-        // Example logic:
-        // 1) Randomly pick from {Rook, Bishop, Knight, Queen}
-        // 2) Store it in a small variable that modifies King’s next move
-        // 3) On your next move, revert to normal King movement
-
-        // For demonstration:
-        string[] pieceOptions = { "Rook", "Bishop", "Knight", "Queen" };
+        // Pick from {Rook, Bishop, Knight, Queen}
+        MovementMode[] pieceOptions = { MovementMode.Rook, MovementMode.Bishop, MovementMode.Knight, MovementMode.Queen };
         int idx = Random.Range(0, pieceOptions.Length);
-        string randomPiece = pieceOptions[idx];
-        Debug.Log("Movement Orb grants " + randomPiece + " movement (1-time)!");
+        _movementMode = pieceOptions[idx];
+        _tempMovementUses = 1;  // one-time use
 
-        // Implementation detail depends on how your King movement logic is set up. 
-        // You might set a bool like `king.hasTempMovement = true; king.tempMovementType = randomPiece;`
+        Debug.Log($"Movement Orb grants {_movementMode} movement (1-time)!");
     }
     
     public void TryMove(int rowDelta, int colDelta)
@@ -173,31 +184,213 @@ public sealed class KingController : MonoBehaviour
     
     private void HighlightPossibleMoves()
     {
-        // King can move 1 square in any of the 8 directions if valid
-        // We'll do rowDelta in [-1..1], colDelta in [-1..1], skipping [0,0]
+        ClearHighlightedCells(); // optionally clear old highlights before re-highlighting
+
+        switch (_movementMode)
+        {
+            case MovementMode.Normal:
+                HighlightKingMoves();
+                break;
+            case MovementMode.Rook:
+                HighlightRookMoves();
+                break;
+            case MovementMode.Knight:
+                HighlightKnightMoves();
+                break;
+            case MovementMode.Bishop:
+                HighlightBishopMoves();
+                break;
+            case MovementMode.Queen:
+                HighlightQueenMoves();
+                break;
+        }
+    }
+
+    // Normal king: 1 square in any direction
+    private void HighlightKingMoves()
+    {
         for (int rd = -1; rd <= 1; rd++)
         {
             for (int cd = -1; cd <= 1; cd++)
             {
-                if (rd == 0 && cd == 0) continue; // skip 0,0
+                if (rd == 0 && cd == 0) continue;
 
                 int newRow = currentRow + rd;
                 int newCol = currentCol + cd;
-
                 if (_boardManager.IsValidPosition(newRow, newCol) &&
                     !_boardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol))
                 {
-                    // highlight that cell
-                    var cell = _boardManager.transform.Find($"Cell_{newRow}_{newCol}");
-                    if (cell != null)
-                    {
-                        CellController cc = cell.GetComponent<CellController>();
-                        if (cc != null)
-                        {
-                            cc.Highlight();
-                        }
-                    }
+                    HighlightCell(newRow, newCol);
                 }
+            }
+        }
+    }
+
+    // Rook: up to 3 squares horizontally/vertically
+    private void HighlightRookMoves()
+    {
+        // Check the 4 directions: up, down, left, right
+        // We'll allow up to 3 squares in each direction
+        int maxSteps = 3;
+
+        // Up
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow + i;
+            int newCol = currentCol;
+            if (!TryHighlightCell(newRow, newCol)) break; 
+            // if blocked or invalid, stop highlighting further
+        }
+        // Down
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow - i;
+            int newCol = currentCol;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+        // Right
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow;
+            int newCol = currentCol + i;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+        // Left
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow;
+            int newCol = currentCol - i;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+    }
+
+    // Knight: L-shaped moves
+    private void HighlightKnightMoves()
+    {
+        // 8 possible positions
+        int[] rowDir = { 2, 2, -2, -2, 1, 1, -1, -1 };
+        int[] colDir = { 1, -1, 1, -1, 2, -2, 2, -2 };
+
+        for (int i = 0; i < 8; i++)
+        {
+            int newRow = currentRow + rowDir[i];
+            int newCol = currentCol + colDir[i];
+            if (_boardManager.IsValidPosition(newRow, newCol) &&
+                !_boardManager.IsPositionOccupiedByAnyEnemy(newRow, newCol))
+            {
+                HighlightCell(newRow, newCol);
+            }
+        }
+    }
+
+    // Bishop: up to 2 squares diagonally
+    private void HighlightBishopMoves()
+    {
+        int maxSteps = 2;
+
+        // 4 diagonal directions: up-right, up-left, down-right, down-left
+        // up-right
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow + i;
+            int newCol = currentCol + i;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+        // up-left
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow + i;
+            int newCol = currentCol - i;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+        // down-right
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow - i;
+            int newCol = currentCol + i;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+        // down-left
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            int newRow = currentRow - i;
+            int newCol = currentCol - i;
+            if (!TryHighlightCell(newRow, newCol)) break;
+        }
+    }
+
+    // Queen = combination of Rook + Bishop
+    private void HighlightQueenMoves()
+    {
+        // We can reuse the logic from Rook + Bishop with max steps
+        // Let's do Rook's logic with up to 3 squares, and Bishop's logic with up to 2 or 3 squares 
+        // but you might want to unify them if you want the Queen to move up to 3 squares diagonally as well. 
+        // We'll assume the Queen can do up to 3 squares in cardinal or diagonal directions.
+        int maxSteps = 3;
+        
+        // Rook-like directions
+        // up
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow + i, currentCol)) break;
+        }
+        // down
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow - i, currentCol)) break;
+        }
+        // right
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow, currentCol + i)) break;
+        }
+        // left
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow, currentCol - i)) break;
+        }
+
+        // diagonal
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow + i, currentCol + i)) break; 
+        }
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow + i, currentCol - i)) break;
+        }
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow - i, currentCol + i)) break;
+        }
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            if (!TryHighlightCell(currentRow - i, currentCol - i)) break;
+        }
+    }
+    
+    private bool TryHighlightCell(int r, int c)
+    {
+        if (!_boardManager.IsValidPosition(r, c) ||
+            _boardManager.IsPositionOccupiedByAnyEnemy(r, c))
+        {
+            // If blocked or out of bounds, return false so we stop in that direction
+            return false;
+        }
+
+        HighlightCell(r, c);
+        return true;
+    }
+
+    private void HighlightCell(int r, int c)
+    {
+        var cell = _boardManager.transform.Find($"Cell_{r}_{c}");
+        if (cell != null)
+        {
+            CellController cc = cell.GetComponent<CellController>();
+            if (cc != null)
+            {
+                cc.Highlight();
             }
         }
     }
@@ -227,10 +420,21 @@ public sealed class KingController : MonoBehaviour
         currentCol = targetCol;
         StartCoroutine(SetPosition(currentRow, currentCol));
 
-        // Deselect the King so we don't accidentally move it again
+        // Deselect so we don't move again
         DeselectKing();
 
-        // Notify TurnManager that we've used our move
+        // If we're using a special movement, decrement uses
+        if (_tempMovementUses > 0)
+        {
+            _tempMovementUses--;
+            if (_tempMovementUses <= 0)
+            {
+                _movementMode = MovementMode.Normal;
+                Debug.Log("Reverted to normal movement after one special move.");
+            }
+        }
+
+        // Notify TurnManager we used our move
         _turnManager.PlayerMoved();
     }
 }
