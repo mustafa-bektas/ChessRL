@@ -14,7 +14,7 @@ namespace Upgrade
 
         private KingController _king;
         private TurnManager _turnManager;
-
+        
         void Start()
         {
             _king = FindAnyObjectByType<KingController>();
@@ -26,6 +26,13 @@ namespace Upgrade
             // Hook button clicks
             option1Button.onClick.AddListener(SelectOption1);
             option2Button.onClick.AddListener(SelectOption2);
+            
+            // get the child text component
+            var option1Text = option1Button.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            option1Text.text = "+2 HP, +1 DEF";
+            
+            var option2Text = option2Button.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            option2Text.text = "+2 ATK";
         }
 
         public void ShowUpgradePanel()
@@ -45,7 +52,7 @@ namespace Upgrade
             _king.maxHP += 2;
             _king.def += 1;
 
-            _king.currentHP = Mathf.Min(_king.currentHP, _king.maxHP); // in case new max < current
+            _king.currentHP = _king.maxHP;
             Debug.Log("Upgrade chosen: +2 Max HP, +1 DEF");
 
             DoneUpgrading();

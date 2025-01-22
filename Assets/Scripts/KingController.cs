@@ -1,9 +1,12 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Enemies;
 using Items;
 using Managers;
 using UnityEngine;
+using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 public sealed class KingController : MonoBehaviour
 {
@@ -25,6 +28,9 @@ public sealed class KingController : MonoBehaviour
     private MovementMode _movementMode = MovementMode.Normal;
     // How many moves left in special mode (1 for a single use)
     private int _tempMovementUses = 0;
+
+    [SerializeField] private TMPro.TextMeshProUGUI hpText; 
+    [SerializeField] private TMPro.TextMeshProUGUI atkText;
     
     public enum MovementMode
     {
@@ -47,6 +53,12 @@ public sealed class KingController : MonoBehaviour
         _tempMovementUses = 0;
         
         StartCoroutine(SetPosition(currentRow, currentCol));
+    }
+
+    private void Update()
+    {
+        hpText.text = "HP: " + currentHP;
+        atkText.text = "ATK: " + atk;
     }
 
     public void PickupItem(ItemScriptableObject itemData)

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace Enemies
@@ -12,7 +13,7 @@ namespace Enemies
             def = 1;
         }
 
-        public override void EnemyMove()
+        public override IEnumerator EnemyMove()
         {
             // Determine how far away the Rook is vertically vs horizontally
             int rowDiff = King.currentRow - currentRow;
@@ -46,10 +47,12 @@ namespace Enemies
             }
 
             // Animate final position (whether we moved or not)
-            StartCoroutine(SetPosition(currentRow, currentCol));
+            yield return StartCoroutine(SetPosition(currentRow, currentCol));
 
             // If we ended up adjacent to the King, do a melee attack
             AttackKingIfAdjacent(atk);
+            
+            yield return new WaitForSeconds(0.05f);
         }
 
         /// <summary>

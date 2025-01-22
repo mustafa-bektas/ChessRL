@@ -31,9 +31,6 @@ namespace Managers
         // Also let us define how many enemies we spawn each floor
         [SerializeField] private int baseEnemyCount = 2;   // e.g. starts at 2
         [SerializeField] private int enemyCountPerFloor = 2; // how many extra enemies per floor
-        [SerializeField] private int floorDifficultyBudget = 0; 
-        // or a formula approach if you want cost-based
-
 
         void Awake()
         {
@@ -208,54 +205,6 @@ namespace Managers
         }
 
         #endregion
-
-        /*void GenerateBoard()
-        {
-            _grid = new GameObject[rows, cols];
-            for (int r = 0; r < rows; r++)
-            {
-                for (int c = 0; c < cols; c++)
-                {
-                    Vector2 position = new Vector2(c * cellSize, r * cellSize);
-                    GameObject cell = Instantiate(cellPrefab, position, Quaternion.identity);
-                    cell.name = $"Cell_{r}_{c}";
-                    _grid[r, c] = cell;
-                    cell.transform.parent = this.transform; // Keep hierarchy organized
-
-                    // Assign row/col to the CellController
-                    CellController cc = cell.GetComponent<CellController>();
-                    if (cc != null)
-                    {
-                        cc.row = r;
-                        cc.col = c;
-                    }
-                }
-            }
-        }
-
-        void GenerateWalls()
-        {
-            int wallCount = Random.Range(minWalls, maxWalls+1);
-            for (int i = 0; i < wallCount; i++)
-            {
-                int r = Random.Range(0, rows);
-                int c = Random.Range(0, cols);
-                
-                // Ensure we don’t place on the starting cell or exit cell, etc.
-                if (r == 0 && c == 0 || r == rows - 1 && c == cols - 1 || IsPositionOccupiedByAnyEnemy(r, c))
-                {
-                    i--;
-                    continue;
-                }
-                {
-                    // Instantiate a wall prefab at that cell
-                    GameObject wall = Instantiate(wallPrefab, _grid[r, c].transform.position, Quaternion.identity);
-                    wall.transform.parent = this.transform;
-                    wall.name = $"Wall_{r}_{c}";
-                    _grid[r, c] = wall;
-                }
-            }
-        }*/
 
         #region Helper Methods
 

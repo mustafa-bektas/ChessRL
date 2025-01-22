@@ -1,3 +1,6 @@
+using System.Collections;
+using UnityEngine;
+
 namespace Enemies
 {
     public class KnightEnemy : ChessEnemy
@@ -8,7 +11,7 @@ namespace Enemies
             hp = 4; atk = 3; def = 0;
         }
 
-        public override void EnemyMove()
+        public override IEnumerator EnemyMove()
         {
             // If King’s ATK is significantly higher (example: 5 higher), do a timid approach
             // For demonstration: If (King.atk - this.atk >= 5), do we skip or pick a move that doesn't reduce distance?
@@ -41,11 +44,13 @@ namespace Enemies
             {
                 currentRow += rowDir[bestIndex];
                 currentCol += colDir[bestIndex];
-                StartCoroutine(SetPosition(currentRow, currentCol));
+                yield return StartCoroutine(SetPosition(currentRow, currentCol));
             }
 
             // Attack if adjacent
             AttackKingIfAdjacent(atk);
+
+            yield return new WaitForSeconds(0.05f);
         }
     }
 }

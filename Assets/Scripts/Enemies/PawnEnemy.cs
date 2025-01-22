@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace Enemies
@@ -15,7 +16,7 @@ namespace Enemies
             def = 0;
         }
 
-        public override void EnemyMove()
+        public override IEnumerator EnemyMove()
         {
             // 1) Try moving straight forward if valid and not occupied
             int forwardRow = currentRow + forwardDirection;
@@ -24,7 +25,8 @@ namespace Enemies
                 !BoardManager.IsPositionOccupiedByAnyEnemy(forwardRow, currentCol))
             {
                 currentRow = forwardRow;
-                StartCoroutine(SetPosition(currentRow, currentCol));
+                Debug.Log("moving pawn to " + currentRow + ", " + currentCol);
+                yield return StartCoroutine(SetPosition(currentRow, currentCol));
             }
             else
             {
@@ -46,6 +48,8 @@ namespace Enemies
                 {
                     King.TakeDamage(atk);
                 }
+
+                yield return new WaitForSeconds(0.05f);
 
                 // If not capturing the King, the Pawn does nothing else (stays put)
             }

@@ -30,11 +30,7 @@ namespace Enemies
         public void Highlight(bool enable)
         {
             Debug.Log("Highlighting enemy");
-            // add a red tint to the original color
-            Color highlightColor = Color.red;
-            Color newColor = enable ? _originalColor + highlightColor : _originalColor;
-            
-            GetComponent<SpriteRenderer>().color = newColor;
+            GetComponent<SpriteRenderer>().color = enable ? Color.red : _originalColor;
         }
         
         private void OnMouseDown()
@@ -121,6 +117,6 @@ namespace Enemies
             }
         }
 
-        public abstract void EnemyMove();
+        public abstract IEnumerator EnemyMove();
     }
 }

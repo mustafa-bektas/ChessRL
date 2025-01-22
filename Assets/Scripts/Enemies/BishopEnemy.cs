@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace Enemies
@@ -10,7 +11,7 @@ namespace Enemies
             hp = 4; atk = 2; def = 0;
         }
 
-        public override void EnemyMove()
+        public override IEnumerator EnemyMove()
         {
             // 1) Check the "magic sniper" special attack 
             // if the King is exactly 2 diagonal squares away
@@ -26,7 +27,7 @@ namespace Enemies
                     // "Spell attack" at range
                     Debug.Log("Bishop casts a diagonal spell on the King!");
                     King.TakeDamage(atk); 
-                    return; // Bishop used its action to cast spell, no movement
+                    yield return new WaitForSeconds(0.2f); // Bishop used its action to cast spell, no movement
                 }
             }
 
@@ -56,10 +57,12 @@ namespace Enemies
             }
 
             // Animate final position
-            StartCoroutine(SetPosition(currentRow, currentCol));
+            yield return StartCoroutine(SetPosition(currentRow, currentCol));
 
             // Could do a final adjacency check for melee
             AttackKingIfAdjacent(atk);
+
+            yield return new WaitForSeconds(0.05f);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Enemies;
 using UnityEngine;
@@ -31,8 +32,6 @@ namespace Managers
 
         // Tracks whether we've moved in the current turn (affects Power Attack logic)
         private bool _hasMovedThisTurn = false;
-
-        private bool _floorCleared = false; // Track if we've already triggered the "all enemies defeated" flow
         
         private void Start()
         {
@@ -54,7 +53,6 @@ namespace Managers
                     break;
 
                 case GamePhase.EnemyTurn:
-                    HandleEnemyTurn();
                     break;
 
                 default:
@@ -212,6 +210,7 @@ namespace Managers
             _pendingAttackMode = AttackMode.None;
 
             RefreshUI();
+            HandleEnemyTurn();
         }
 
         /// <summary>
@@ -236,16 +235,23 @@ namespace Managers
 
         private void HandleEnemyTurn()
         {
-            // Enemies perform their moves
+            // Start a coroutine that processes enemies in sequence
+            StartCoroutine(EnemyTurnSequence());
+        }
+
+        private IEnumerator EnemyTurnSequence()
+        {
+            Debug.Log("enemyturnsequence called");
             foreach (var enemy in enemies)
             {
-                if (enemy != null)
+                if (enemy)
                 {
-                    enemy.EnemyMove();
+                    // Wait for this enemy's move+attack to complete
+                    yield return StartCoroutine(enemy.EnemyMove());
                 }
             }
 
-            // After enemies move, go back to Player Turn
+            // After all enemies have moved in sequence, return to Player Turn
             _currentPhase = GamePhase.PlayerTurn;
             RefreshUI();
         }
@@ -291,25 +297,18 @@ namespace Managers
             // If no enemies left, you win!
             if (enemies == null || enemies.Count == 0)
             {
-                _floorCleared = true;
                 ShowUpgradeChoices();
             }
 
             // If King is at exit
             if (king.currentRow == 7 && king.currentCol == 7)
             {
-                _floorCleared = true;
                 ShowUpgradeChoices();
             }
         }
         
         private void RefreshUI()
         {
-            if (phaseText)
-            {
-                phaseText.text = $"{_currentPhase} / Sub: {_playerSubPhase}";
-            }
-            
             // Default to all disabled
             attackButton.interactable = false;
             powerAttackButton.interactable = false;
@@ -325,12 +324,13 @@ namespace Managers
             switch (_playerSubPhase)
             {
                 case PlayerSubPhase.Move:
-                    //phaseText.text = "MOVE";
+                    phaseText.text = "MOVE";
                     // Move sub-phase => no Attack or PowerAttack
                     return;
 
                 case PlayerSubPhase.Action:
-                    //phaseText.text = "ACTION";
+                    phaseText.text = "ACTION";
+                    
                     // Attack or Power Attack if there's an adjacent enemy
                     bool enemyAdjacent = (GetAdjacentEnemies().Count > 0);
                     if (enemyAdjacent)
@@ -347,6 +347,7 @@ namespace Managers
                     return;
 
                 case PlayerSubPhase.SelectingAttackTarget:
+                    phaseText.text = "SELECT TARGET";
                     // We are waiting for the player to click an adjacent enemy
                     // No further buttons are needed except skip (to cancel)
                     return;
@@ -382,7 +383,6 @@ namespace Managers
 
         private void NextFloor()
         {
-            _floorCleared = false;
             _upgradeUIShown = false;
 
             // Increase BoardManager's floor index

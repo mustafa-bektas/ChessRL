@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace Enemies
@@ -15,7 +16,7 @@ namespace Enemies
             def = 2;
         }
 
-        public override void EnemyMove()
+        public override IEnumerator EnemyMove()
         {
             // 1) Check for possible ranged attack if King is within 2 squares linearly or diagonally
             //    e.g., rowDelta <= 2 && colDelta == 0 for vertical,
@@ -48,7 +49,7 @@ namespace Enemies
             {
                 Debug.Log($"Queen uses ranged attack on King!");
                 King.TakeDamage(atk);
-                return; // no movement if we used the ranged attack
+                yield return new WaitForSeconds(0.2f);  // no movement if we used the ranged attack
             }
 
             // 2) If no ranged attack, we move up to 3 squares either diagonally or straight 
@@ -101,10 +102,13 @@ namespace Enemies
                 steps--;
             }
 
-            StartCoroutine(SetPosition(currentRow, currentCol));
+            yield return StartCoroutine(SetPosition(currentRow, currentCol));
 
             // 3) Final adjacency check for melee
             AttackKingIfAdjacent(atk);
+            
+            yield return new WaitForSeconds(0.05f);
+
         }
     }
 }

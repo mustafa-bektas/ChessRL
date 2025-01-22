@@ -79,7 +79,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 0, b: 0.45529413, a: 1}
+  m_Color: {r: 0, g: 0.47798735, b: 0.36492032, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -106,8 +106,6 @@ MonoBehaviour:
   hp: 0
   atk: 0
   def: 0
-  glowMaterial: {fileID: 2100000, guid: bb0c6b17ffffd7e4e8682be1dbcc6806, type: 2}
-  originalMaterial: {fileID: 2100000, guid: 86340485d3c6efa4a8d29711d327e0c9, type: 2}
 --- !u!61 &2286516074975805917
 BoxCollider2D:
   m_ObjectHideFlags: 0
